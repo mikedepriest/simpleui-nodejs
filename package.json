@@ -1,5 +1,5 @@
 {
-  "name": "security-predix-boot-node-app",
+  "name": "ey-msd-predix-nodejs-starter",
   "version": "0.0.0",
   "private": true,
   "scripts": {
@@ -18,7 +18,9 @@
     "https-proxy-agent": "^1.0.0",
     "querystring": "~0.2.0",
     "request": "~2.67.0",
-    "url": "~0.11.0"
+    "url": "~0.11.0",
+    "morgan": "~1.7.0",
+    "fs": "~0.0.2"
   },
   "author": "swapnavad,gstroup",
   "license": "ISC",

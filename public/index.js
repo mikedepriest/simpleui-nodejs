@@ -10,6 +10,7 @@
     <h4>Predix Developer Kit</h4>
   </div>
   <div class="container">
+    <h1>Welcome to Predix Transform 2016!</h1>
     <p>This sample app shows how a basic web application works with Predix UAA.</p>
 
     <ul>

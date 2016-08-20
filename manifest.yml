@@ -1,20 +1,22 @@
 ---
 applications:
-- name: adrian-app-pi
+- name: ey-msd-predix-nodejs-starter
   memory: 128M
   buildpack: nodejs_buildpack
   #command:  DEBUG=express:* node app.js
   command:  node app.js
-#services:
- # - <your-name>-secure-uaa-instance
- # - <your-name>-timeseries-instance
- # - <your-name>-asset-instance
+services:
+- ey-msd-predix-uaa
+- ey-msd-predix-timeseries
+- ey-msd-predix-asset
 env:
     node_env: cloud
     uaa_service_label : predix-uaa
-    #clientId: uaa-client-id
-    #base64ClientCredential: dWFhLWNsaWVudC1pZDp1YWEtY2xpZW50LWlkLXNlY3JldA==
+    clientId: app_client_id
+    base64ClientCredential: YXBwX2NsaWVudF9pZDpzZWNyZXQ=
+    # Callback URL
+    callbackUrl: "view1"
     # Following properties configured only for Timeseries WindData service Integration
-    #windServiceUrl: "{URL of the microservice <your-name>-winddata-timeseries-service}, e.g.  https://your-name-winddata-timeseries-service.run.asw-usw02-pr.predix.io"
-    #assetMachine: adrian-type
-    #tagname: adrian-tag
+    windServiceUrl: "https://your-name-winddata-timeseries-service.run.asw-usw02-pr.predix.io"
+    assetMachine: adrian-type
+    tagname: adrian-tag

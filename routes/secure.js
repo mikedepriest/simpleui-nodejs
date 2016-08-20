@@ -16,7 +16,7 @@ router.use(function(req,res,next){
 /* GET Secure resource */
 router.get('/', function(req, res, next) {
   //console.log('Accessing the secure section ...'+path.join(__dirname + '/secure.html'))
-  res.sendFile(path.join(__dirname + '/../public/secure.html'));
+  res.sendFile(path.join(__dirname + '/../public/index-polymer.html'));
 });
 
 /* GET Secure resource for data */
