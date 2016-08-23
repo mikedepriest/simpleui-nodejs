@@ -1,9 +1,12 @@
-Predix Development Kit Security Starter NodeJs Application
-==========================================================
+simpleui-nodejs
+===============
 
-This is simple starter Node application that demonstrates user authentication with Predix UAA.
+This is an attempted fusion between the predix-nodejs-starter app and the Polymer app-drawer-template.
 
-Refer to the predix-nodejs-starter to configure the UAA client.
+## Acknowledgements
+Obviously this is based on material found at
+ * https://github.com/PredixDev/predix-nodejs-starter
+ * https://www.polymer-project.org/1.0/toolbox/templates
 
 ## Running locally
 Edit the config.json to run the application locally for your UAA client.
@@ -15,9 +18,6 @@ Sample :
   "uaaUri" : "${UAA URL}",
   "base64ClientCredential": "${base 64 encoding of clientId:secret}",
   "appUrl": "http://localhost:3000",
-  "assetZoneId": "${asset zone id for Asset service instantiated}",
-  "tagname": "${tag name list to query. Separated by comma}",
-  "assetURL": "${The asset url to query the tags from. https://<assetURI>/<assetType>}",
   "timeseries_zone": "${timeseries zone id for Timeseries service instantiated}",
   "timeseriesURL": "${Timeseries to query for data. <TimeseriesURI>/v1/datapoints}",
   "uaaURL": "${The UAA URI. <UaaURI>/predix.io",
@@ -62,9 +62,6 @@ env:
     uaa_service_label : predix-uaa
     clientId: <client id with timeseries and asset scope>
     base64ClientCredential: <base64 encoding of client id>
-    # Following properties configured only for Timeseries WindData service Integration
-    assetMachine: <The asset name pushed to Asset service>
-    tagname: <The asset tag pushed to Asset service>
 ```
 
 `cf push <appName> -f my-app-manifest.yml`
