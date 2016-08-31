@@ -21,7 +21,8 @@
     "url": "~0.11.0",
     "morgan": "~1.7.0",
     "fs": "~0.0.2",
-    "winston": "~2.2.0"
+    "winston": "~2.2.0",
+    "express-request-proxy": "~2.0.0"
   },
   "author": "swapnavad,gstroup",
   "license": "ISC",

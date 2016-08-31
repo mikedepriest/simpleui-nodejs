@@ -31,9 +31,9 @@ var environmentVars = require('./config.json');
 //
 // Declare routes - these code fragments define specific URIs to be handled by the server
 //
-var index = require('./routes/index.js');
-var secure = require('./routes/secure.js');
-var auth = require('./routes/auth.js');
+var index = require('./routes/index');
+var uaa = require('./routes/uaa');
+var timeseries = require('./routes/timeseries');
 
 //
 // Setting up Express server
@@ -55,13 +55,6 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(cookieParser());
 
-//
-// Application specific declarations
-//
-
-// This application
-var applicationUrl = '';
-
 // Predix UAA information
 var clientId = '';
 var base64ClientCredential = '';
@@ -78,10 +71,6 @@ var assetZoneId = '';
 var timeseriesZone = '';
 var timeseriesURL = '';
 
-// remove?
-var isConnectedTimeseriesEnabled = false;
-var isConnectedAssetEnabled = false;
-
 //
 // Initialize properties - checking NODE_ENV to determine if we are running
 // in Cloud Foundry. If so, load cloud properties from VCAPS, otherwise
@@ -95,13 +84,10 @@ if (node_env == 'development') {
     var devConfig = environmentVars[node_env];
     winston.info("Development environment detected, initializing from config.json");
 
-    applicationUrl = devConfig.appUrl;
-
     clientId = devConfig.clientId;
     uaaUri = devConfig.uaaUri;
     base64ClientCredential = devConfig.base64ClientCredential;
 
-    assetTagname = devConfig.tagname;
     assetURL = devConfig.assetURL;
     assetZoneId = devConfig.assetZoneId;
 
@@ -123,13 +109,11 @@ if (node_env == 'development') {
     var uaaService = vcapServices[process.env.uaa_service_label];
     clientId = process.env.clientId;
     base64ClientCredential = process.env.base64ClientCredential;
-    assetTagname = process.env.tagname;
-    assetMachine = process.env.assetMachine;
 
     uaaUri = '';
 
     if (uaaService) {
-        uaaUri = uaaService[0].credentials.uri;
+        uaaUri = uaaService[0].credentials.issuerId;
     }
 
     if (assetService) {
@@ -141,8 +125,6 @@ if (node_env == 'development') {
         timeseriesURL = timeseriesService[0].credentials.query.uri;
     }
 
-    applicationUrl = 'https://' + vcapApplication.uris[0];
-
 }
 
 // Setting the Predix UAA config used in the router auth.js
@@ -150,51 +132,31 @@ var uaaConfig = {
     clientId: clientId,
     serverUrl: uaaUri,
     defaultClientRoute: '/index.html',
-    base64ClientCredential: base64ClientCredential,
-    callbackUrl: applicationUrl + '/callback',
-    appUrl: applicationUrl
+    base64ClientCredential: base64ClientCredential
 };
 
-if (timeseriesURL != '') {
-    isConnectedTimeseriesEnabled = true;
-}
-
-if (assetURL != '') {
-    isConnectedAssetEnabled = true;
-}
-
-var connectedDeviceConfig = {
-    assetTagname: assetTagname,
-    assetURL: assetURL,
-    assetZoneId: assetZoneId,
-    timeseriesZone: timeseriesZone,
-    timeseriesURL: timeseriesURL,
-    uaaURL: uaaUri,
-    uaaClientId: clientId,
-    uaaBase64ClientCredential: base64ClientCredential,
-    isConnectedTimeseriesEnabled: isConnectedTimeseriesEnabled,
-    isConnectedAssetEnabled: isConnectedAssetEnabled
+var timeSeriesConfig = {
+    serverUrl: timeseriesURL,
+    zoneId: timeseriesZone
 };
-app.set('connectedDeviceConfig', connectedDeviceConfig);
+
+var assetConfig = {
+    serverUrl: assetURL,
+    zoneId: assetZoneId
+}
 
 var logMessage = '************' + node_env + '******************\n'
-        + 'uaaConfig.clientId = ' + uaaConfig.clientId + '\n'
         + 'uaaConfig.serverUrl = ' + uaaConfig.serverUrl + '\n'
-        + 'uaaConfig.defaultClientRoute = ' + uaaConfig.defaultClientRoute + '\n'
+        + 'uaaConfig.clientId = ' + uaaConfig.clientId + '\n'
         + 'uaaConfig.base64ClientCredential = ' + uaaConfig.base64ClientCredential + '\n'
-        + 'uaaConfig.callbackUrl = ' + uaaConfig.callbackUrl + '\n'
-        + 'uaaConfig.appUrl = ' + uaaConfig.appUrl + '\n'
-        + 'raspberryPiConfig.assetTagname = ' + connectedDeviceConfig.assetTagname + '\n'
-        + 'raspberryPiConfig.assetURL = ' + connectedDeviceConfig.assetURL + '\n'
-        + 'raspberryPiConfig.assetZoneId = ' + connectedDeviceConfig.assetZoneId + '\n'
-        + 'raspberryPiConfig.timeseriesZone = ' + connectedDeviceConfig.timeseriesZone + '\n'
-        + 'raspberryPiConfig.timeseriesURL = ' + connectedDeviceConfig.timeseriesURL + '\n'
-        + 'raspberryPiConfig.uaaURL = ' + connectedDeviceConfig.uaaURL + '\n'
+        + 'timeSeriesConfig.serverUrl = ' + timeSeriesConfig.serverUrl + '\n'
+        + 'timeSeriesConfig.zoneId = ' + timeSeriesConfig.zoneId + '\n'
+        + 'assetConfig.serverUrl = ' + assetConfig.serverUrl + '\n'
+        + 'assetConfig.zoneId = ' + assetConfig.zoneId + '\n'
         + '***************************'
     ;
 
 winston.info(logMessage);
-
 
 var server = app.listen(config.express.port, function () {
     var host = server.address().address;
@@ -219,44 +181,7 @@ app.use(session({
     })
 );
 
-// callback endpoint to removeSession
-app.get('/removeSession', function (req, res, next) {
-    auth.deleteSession(req);
-    res.redirect("/");
-});
 
-//Initializing auth.js modules with UAA configurations
-app.use(auth.init(uaaConfig));
-
-//
-// Set up a proxy for calling the TimeSeries microservice from the client.
-// Proxy uses http-proxy-middleware.
-//
-// Client will not know the Authorization information, so we provide that in
-// the header, along with setting the content-type to application/json. This will
-// also handle navigating a corporate proxy if one is present (although it's not clear how
-// that will take place if the proxy requires authentication).
-//
-if (timeseriesURL) {
-    var corporateProxyServer = process.env.http_proxy || process.env.HTTP_PROXY;
-    var apiProxyContext = '/api';
-    var apiProxyOptions = {
-        target: timeseriesURL,
-        changeOrigin: true,
-        logLevel: 'debug',
-        pathRewrite: {'^/api/services/timeseries': '/services/timeseries'},
-        onProxyReq: function onProxyReq(proxyReq, req, res) {
-            req.headers['Authorization'] = auth.getUserToken(req);
-            req.headers['Content-Type'] = 'application/json';
-            //winston.info('Request headers: ' + JSON.stringify(req.headers));
-        }
-    };
-    if (corporateProxyServer) {
-        apiProxyOptions.agent = new HttpsProxyAgent(corporateProxyServer);
-    }
-
-    app.use(proxyMiddleware(apiProxyContext, apiProxyOptions));
-}
 
 //
 // Define location of static files (non-routed)
@@ -270,30 +195,18 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Entry point before authentication - process further as described in index.js
 app.use('/', index);
 
-// Entry point after authentication - process further as described in secure.js
-app.use('/secure', secure);
+// API proxies for AJAX calls from client
+uaa.initialize(uaaConfig);
+app.use('/api/uaa',uaa);
 
+timeseries.initialize(timeSeriesConfig);
+app.use('/api/timeseries',timeseries);
 
-function getTimeSeriesUrl(req) {
-    winston.info('TimeSeries URL from configuration: ' + timeseriesURL);
-    return timeseriesURL;
-}
-
-// using express-http-proxy, we can pass in a function to get the target URL for dynamic proxying:
-app.use('/api', expressProxy(getTimeSeriesUrl, {
-        https: true,
-        forwardPath: function (req) {
-            //  winston.info("Forwarding request: " + req.url);
-            var forwardPath = url.parse(req.url).path;
-            //  winston.info("forwardPath returns; " + forwardPath);
-            return forwardPath;
-        },
-        decorateRequest: function (req) {
-            req.headers['Content-Type'] = 'application/json';
-            return req;
-        }
-    }
-));
+// callback endpoint to removeSession
+app.get('/removeSession', function (req, res, next) {
+    auth.deleteSession(req);
+    res.redirect("/");
+});
 
 // Last route: fall through if nothing else matched (error 404)
 // Catch 404 and forward to error handler

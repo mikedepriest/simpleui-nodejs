@@ -7,7 +7,9 @@ var express = require('express');
 var router = express.Router();
 var winston = require('winston');
 
-winston.info('Entering router.js');
+winston.info('Entering index.js');
+
+//module.exports = {
 
 /* GET index page. */
 
@@ -21,4 +23,4 @@ router.get('/', function (req, res, next) {
 
 module.exports = router;
 
-winston.info('Exiting router.js');
+winston.info('Exiting index.js');

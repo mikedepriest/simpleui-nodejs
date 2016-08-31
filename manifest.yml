@@ -3,7 +3,6 @@ applications:
 - name: ey-msd-predix-nodejs-starter
   memory: 128M
   buildpack: nodejs_buildpack
-  #command:  DEBUG=express:* node app.js
   command:  node app.js
 services:
 - ey-msd-predix-uaa
@@ -14,9 +13,4 @@ env:
     uaa_service_label : predix-uaa
     clientId: app_client_id
     base64ClientCredential: YXBwX2NsaWVudF9pZDpzZWNyZXQ=
-    # Callback URL
-    callbackUrl: "view1"
-    # Following properties configured only for Timeseries WindData service Integration
-    windServiceUrl: "https://your-name-winddata-timeseries-service.run.asw-usw02-pr.predix.io"
-    assetMachine: adrian-type
-    tagname: adrian-tag
+

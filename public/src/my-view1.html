@@ -9,85 +9,175 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 -->
 
 <link rel="import" href="../bower_components/polymer/polymer.html">
-  
+<link rel="import" href="../bower_components/login-polyform/login-polyform.html">
+
 <dom-module id="my-view1">
 
-  <template>
+    <template>
 
-    <style>
-      :host {
-        display: block;
-        padding: 10px;
-      }
-      .card {
-        box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
-        padding: 16px;
-        margin: 24px;
-        border-radius: 5px;
-        background-color: #fff;
-        color: #757575;
-      }
-      .circle {
-        display: inline-block;
-        height: 64px;
-        width: 64px;
-        border-radius: 50%;
-        background: #ddd;
-        line-height: 64px;
-        font-size: 30px;
-        color: #555;
-        text-align: center;
-      }
-      h1 {
-        font-size: 22px;
-        margin: 16px 0;
-        color: #212121;
-      }
-    </style>
+        <template is="dom-if" if="[[ loggedIn ]]">
 
-    <div><paper-button raised on-tap="handleSignOut">This is the slogan: {{my-app.slogan}} : isn't it?</paper-button></div>
+            <style>
+                :host {
+                    display: block;
+                    padding: 10px;
+                }
 
-    <div class="card">
-      <div class="circle">2</div>
-      <h1>View One</h1>
-      <p>Ea duis bonorum nec, falli paulo aliquid ei eum.</p>
-      <p>Id nam odio natum malorum, tibique copiosae expetenda mel ea.Detracto suavitate repudiandae no eum. Id adhuc minim soluta nam.Id nam odio natum malorum, tibique copiosae expetenda mel ea.</p>
+                .card {
+                    box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
+                    padding: 16px;
+                    margin: 24px;
+                    border-radius: 5px;
+                    background-color: #fff;
+                    color: #757575;
+                }
+
+                .circle {
+                    display: inline-block;
+                    height: 64px;
+                    width: 64px;
+                    border-radius: 50%;
+                    background: #ddd;
+                    line-height: 64px;
+                    font-size: 30px;
+                    color: #555;
+                    text-align: center;
+                }
+
+                h1 {
+                    font-size: 22px;
+                    margin: 16px 0;
+                    color: #212121;
+                }
+            </style>
+
+            <template is="dom-if" if="[[ loggedIn ]]">
+                <div>
+                    <paper-button on-tap="handleSignOut">Sign Out</paper-button>
+                </div>
+            </template>
+
+            <div class="card">
+                <div class="circle">2</div>
+                <h1>View Two</h1>
+                <p>Ea duis bonorum nec, falli paulo aliquid ei eum.</p>
+                <p>Id nam odio natum malorum, tibique copiosae expetenda mel ea.Detracto suavitate repudiandae no eum.
+                    Id adhuc minim soluta nam.Id nam odio natum malorum, tibique copiosae expetenda mel ea.</p>
 
 
-    </div>
+            </div>
 
-  </template>
+        </template>
 
-  <script>
 
-    Polymer({
+        <template is="dom-if" if="[[ !loggedIn ]]">
 
-      is: "my-view1",
-      properties: {
-         loggedIn: {
-            type: Boolean,
-            value: false
-         },
-         uaaCredentials: {
-            type: Object
-         }
-      },
-      handleSignOut: function(e) {
-        this._user = {};
-        this.loggedIn = false;
-      },
-      handleLoginResponse: function(e,detail) {
-        console.log("loginResponse",detail);
-        console.log("loginResponse",e);
-        console.log("loginResponse",this.loginResponse);
-      },
-      handleLoginError: function(e) {
-        console.log("loginError",e.detail);
-        console.log("loginError",this.lastError);
-        console.log("loginError",this.lastRequest);
-      }
-    });
+            <login-polyform
+                    on-login="handleLogin"
+                    credentials="{{_user}}"
+                    username-validation-pattern="^[a-zA-Z0-9_\+@\!]+$"
+                    username-error-message="Letters, numbers, underscores, email addresses"
+                    password-validation-pattern="^.+$"
+                    password-error-message="">
+                <!-- img avatar src="https://randomuser.me/api/portraits/med/women/27.jpg"/ -->
+            </login-polyform>
 
-  </script>
+            <iron-ajax
+                    auto
+                    id="loginAjax"
+                    method="POST"
+                    url="{{uaaLoginUrl}}"
+                    headers='{{uaaHeaders}}'
+                    body="{{uaaCredentials}}"
+                    handle-as="json"
+                    last-response="{{loginResponse}}"
+                    last-request="{{lastRequest}}"
+                    last-error="{{lastError}}"
+                    on-response="handleLoginResponse"
+                    on-error="handleLoginError">
+            </iron-ajax>
+
+
+        </template>
+
+    </template>
+
+    <script>
+
+        Polymer({
+
+            is: "my-view1",
+            properties: {
+                loggedIn: {
+                    type: Boolean,
+                    value: false
+                },
+                uaaLoginUrl: {
+                    type: String,
+                    value: "/api/uaa"
+                    //value: "https://d7ecf063-bf96-414f-a3b7-7ac8dcc61617.predix-uaa.run.aws-usw02-pr.ice.predix.io/oauth/token"
+                    //value: "http://httpbin.org/post"
+                },
+//                uaaAuthHeader: {
+//                    type: String,
+//                    value: "authorization: Basic YXBwX2NsaWVudF9pZDpzZWNyZXQ="
+//                },
+                uaaHeaders: {
+                    type: Object,
+                    value: {
+                        "Accept": "application/json, application/x-www-form-urlencoded",
+                        "Pragma": "no-cache",
+                        "Content-type": "application/x-www-form-urlencoded",
+                        "Cache-Control": "no-cache" //,
+                        //"authorization": "Basic YXBwX2NsaWVudF9pZDpzZWNyZXQ="
+                    }
+                },
+                uaaCredentials: {
+                    type: Object,
+                    value: {
+                        "username": "app_user_1",
+                        "password": "app_user_1",
+                        "grant_type": "password"
+                    }
+                }
+            },
+            handleLogin: function (e) {
+//                this.uaaLoginUrl = this.uaaUrlBase;
+                this.uaaCredentials = {
+//                    "username": this._user.username,
+//                    "password": this._user.password,
+                    "username": "app_user_1",
+                    "password": "app_user_1",
+                    "grant_type": "password"
+                };
+                console.log("handleLogin", this.$$("#loginAjax").url);
+                this.$$("#loginAjax").generateRequest();
+                //this.loggedIn = true;
+            },
+            handleSignOut: function (e) {
+                this._user = {};
+                this.loggedIn = false;
+                location.reload();
+            },
+            handleLoginResponse: function (e, detail) {
+                console.log("loginResponse", detail);
+                console.log("loginResponse", e);
+                console.log("loginResponse", this.loginResponse);
+                if (this.loginResponse.authorized) {
+                    this.loggedIn = this.loginResponse.authorized;
+                }
+            },
+            handleLoginError: function (e) {
+                console.log("loginError", e.detail);
+                console.log("loginError", this.lastError);
+                console.log("loginError", this.lastRequest);
+            }
+        });
+
+    </script>
 
 </dom-module>
+
+<!--
+-->
+
