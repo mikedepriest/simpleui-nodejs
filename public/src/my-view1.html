@@ -10,6 +10,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
 <link rel="import" href="../bower_components/polymer/polymer.html">
 <link rel="import" href="../bower_components/login-polyform/login-polyform.html">
+<link rel="import" href="../bower_components/px-theme/px-theme.html"/>
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html"/>
+<link rel="import" href="../bower_components/px-chart/px-chart.html"/>
+
 
 <dom-module id="my-view1">
 
@@ -58,13 +62,35 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
             </template>
 
             <div class="card">
-                <div class="circle">2</div>
-                <h1>View Two</h1>
-                <p>Ea duis bonorum nec, falli paulo aliquid ei eum.</p>
-                <p>Id nam odio natum malorum, tibique copiosae expetenda mel ea.Detracto suavitate repudiandae no eum.
-                    Id adhuc minim soluta nam.Id nam odio natum malorum, tibique copiosae expetenda mel ea.</p>
 
+                <iron-ajax id="timeSeriesAjax" auto
+                           content-type="application/json"
+                           method="POST"
+                           url="/api/timeseries/datapoints/query"
+                           body="{{timeSeriesQuery}}"
+                           handle-as="json"
+                           last-response="{{timeSeriesResponse}}"
+                           on-response="handleTimeSeriesResponse">
+                </iron-ajax>
 
+                <px-chart id="tagChart" tooltip-type="condensed" tooltip-datetime-format="HH:mm:ss LT | DD MMM YYYY" series-events-width="1" zoom-type="xy" zoom-controls="hidecontrols">
+                    <px-chart-controls data-controls show-date-range="true"
+                                       display-options='{ "displayType": "normal","submitButtonText": "Update", "submitButtonIcon": "icon-arrow-right" }'></px-chart-controls>
+                    <px-chart-yaxis title='{"text": "Deg F"}' id=0 offset="0"></px-chart-yaxis>
+                    <px-chart-yaxis title='{"text": "Deg F"}' id=1 opposite="true" offset="0"></px-chart-yaxis>
+                    <!--
+                    <px-chart-series-line id="Series1" axis-id="firstAxis" upper-threshold="40" lower-threshold="0" units="C" data="{{series1data}}"></px-chart-series-line>
+                    <px-chart-series-line id="Series2" axis-id="anotherAxis" upper-threshold="40" lower-threshold="0" units="C" data="{{series2data}}"></px-chart-series-line>
+                    -->
+                </px-chart>
+
+                <p class="u-mt+">
+                    <paper-button raised on-tap="togglePointMarkers">Toggle Point Markers</paper-button>
+                    <paper-toggle-button checked="{{arrayItem(chartSeriesList.*,0,'enabled')}}">{{arrayItem(chartSeriesList.*,0,'label')}}</paper-toggle-button>
+                    <paper-toggle-button checked="{{arrayItem(chartSeriesList.*,1,'enabled')}}">{{arrayItem(chartSeriesList.*,1,'label')}}</paper-toggle-button>
+                    <paper-toggle-button checked="{{arrayItem(chartSeriesList.*,2,'enabled')}}">{{arrayItem(chartSeriesList.*,2,'label')}}</paper-toggle-button>
+                    <paper-toggle-button checked="{{arrayItem(chartSeriesList.*,3,'enabled')}}">{{arrayItem(chartSeriesList.*,3,'label')}}</paper-toggle-button>
+                </p>
             </div>
 
         </template>
@@ -83,7 +109,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
             </login-polyform>
 
             <iron-ajax
-                    auto
                     id="loginAjax"
                     method="POST"
                     url="{{uaaLoginUrl}}"
@@ -115,44 +140,69 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                 uaaLoginUrl: {
                     type: String,
                     value: "/api/uaa"
-                    //value: "https://d7ecf063-bf96-414f-a3b7-7ac8dcc61617.predix-uaa.run.aws-usw02-pr.ice.predix.io/oauth/token"
-                    //value: "http://httpbin.org/post"
                 },
-//                uaaAuthHeader: {
-//                    type: String,
-//                    value: "authorization: Basic YXBwX2NsaWVudF9pZDpzZWNyZXQ="
-//                },
                 uaaHeaders: {
                     type: Object,
                     value: {
                         "Accept": "application/json, application/x-www-form-urlencoded",
                         "Pragma": "no-cache",
                         "Content-type": "application/x-www-form-urlencoded",
-                        "Cache-Control": "no-cache" //,
-                        //"authorization": "Basic YXBwX2NsaWVudF9pZDpzZWNyZXQ="
+                        "Cache-Control": "no-cache"
                     }
                 },
+//                uaaCredentials: {
+//                    type: Object,
+//                    value: {
+//                        username: "app_user_1",
+//                        password: "app_user_1",
+//                        grant_type: "password"
+//                    }
                 uaaCredentials: {
                     type: Object,
                     value: {
-                        "username": "app_user_1",
-                        "password": "app_user_1",
-                        "grant_type": "password"
+                        username: "",
+                        password: "",
+                        grant_type: ""
                     }
+                },
+                chartSeriesList: {
+                    type: Array,
+                    value: [
+                        {tag: "GarageAmbient1", enabled: true, yAxis: "leftAxis", label: "Garage Ambient 1", units: "C", min: "-5", max: "40", series: []},
+                        {tag: "Refrigerator", enabled: false, yAxis: "rightAxis", label: "Refrigerator", units: "C", min: "-10", max: "10", series: []},
+                        {tag: "GarageAmbient2", enabled: false, yAxis: "leftAxis", label: "Garage Ambient 2", units: "C", min: "-5", max: "40", series: []},
+                        {tag: "Fermentor", enabled: true, yAxis: "rightAxis", label: "Fermentor", units: "C", min: "0", max: "40", series: []}
+                    ]
+                },
+                timeSeriesQueryElements: {
+                    type: Object,
+                    value: {
+                        start: "1d-ago",
+                        tags: [
+                            {name: "GarageAmbient1"},
+                            {name: "Refrigerator"},
+                            {name: "GarageAmbient2"},
+                            {name: "Fermentor"}
+                        ]
+                    }
+                },
+                timeSeriesQuery: {
+                    type: String,
+                    value: ""
+                },
+                timeSeriesResponse: "",
+                tagCheckboxState: {
+                    type: Object,
+                    value: []
                 }
             },
             handleLogin: function (e) {
-//                this.uaaLoginUrl = this.uaaUrlBase;
                 this.uaaCredentials = {
-//                    "username": this._user.username,
-//                    "password": this._user.password,
-                    "username": "app_user_1",
-                    "password": "app_user_1",
+                    "username": this._user.username,
+                    "password": this._user.password,
                     "grant_type": "password"
                 };
-                console.log("handleLogin", this.$$("#loginAjax").url);
                 this.$$("#loginAjax").generateRequest();
-                //this.loggedIn = true;
             },
             handleSignOut: function (e) {
                 this._user = {};
@@ -165,14 +215,145 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                 console.log("loginResponse", this.loginResponse);
                 if (this.loginResponse.authorized) {
                     this.loggedIn = this.loginResponse.authorized;
+                    this.queryTimeSeries();
                 }
             },
             handleLoginError: function (e) {
                 console.log("loginError", e.detail);
                 console.log("loginError", this.lastError);
                 console.log("loginError", this.lastRequest);
+            },
+            handleTimeSeriesResponse: function (e, detail) {
+                console.log(this.timeSeriesResponse);
+                for (var t=0; t < this.timeSeriesResponse.tags.length; t++ ) {
+                    if (this.timeSeriesResponse.tags[t].results[0].values) {
+                        //console.log('bingo - we have result values');
+                        // What series is this? Match it to our list
+                        var tsrTag = this.timeSeriesResponse.tags[t].name;
+                        var tsrValues = this.timeSeriesResponse.tags[t].results[0].values;
+
+                        var seriesInfo = this.chartSeriesList.find(x => x.tag===tsrTag);
+                        for (var i = 0; i < tsrValues.length; i++) {
+                            seriesInfo.series.push([tsrValues[i][0], this.convertTemp(tsrValues[i][1],"F")]);
+                        }
+                        this.displayChartSeries(seriesInfo);
+                    } else {
+                        console.log('bogus - we got nothin');
+                    }
+                }
+            },
+            displayChartSeries: function(seriesInfo) {
+                var tsChart = Polymer.dom(this.root).querySelector('px-chart');
+                if (tsChart.chart.get(seriesInfo.tag)) {
+                    console.log("series " + seriesInfo.tag + " already exists on chart, replacing");
+                    tsChart.removeSeries(seriesInfo.tag);
+                }
+                if (seriesInfo.enabled) {
+                    tsChart.addSeries( {id: seriesInfo.tag,name: seriesInfo.label, data: seriesInfo.series, axis: seriesInfo.axis },false);
+                } else {
+                    console.log("series "+seriesInfo.tag+" display disabled");
+                }
+            },
+            queryTimeSeries: function () {
+                this.timeSeriesQueryElements.tags = [];
+                for (var i=0; i< this.chartSeriesList.length; i++) {
+                    var queryTag = { name: this.chartSeriesList[i].tag};
+                    this.timeSeriesQueryElements.tags.push(queryTag);
+                }
+                this.timeSeriesQuery = JSON.stringify(this.timeSeriesQueryElements);
+                console.log("queryTimeSeries:  "+this.timeSeriesQuery);
+                if(this.$$("#timeSeriesAjax")) {
+                    this.$$("#timeSeriesAjax").generateRequest();
+                }
+            },
+            arrayItem: function(change, index, path) {
+                // this.get(path, root) returns a value for a path
+                // relative to a root object.
+                return this.get(path, change.base[index]);
+            },
+            convertTemp: function(temp,toUnit) {
+                var toTemp = temp;
+                if (toUnit==="F") {
+                    toTemp = 1.8*temp+32.0;
+                }
+                return toTemp;
+            },
+            togglePointMarkers: function (evt) {
+                var tsChart = Polymer.dom(this.root).querySelector('px-chart');
+                tsChart.togglePointMarkers(/*seriesIds*/null);
+            },
+            toggleSeries: function (e,detail) {
+                var label = e.path[0].textContent;
+                var newState = e.path[0].checked;
+                for (var t=0; t < this.chartSeriesList.length; t++ ) {
+                    if (this.chartSeriesList[t].label === label) {
+                        this.chartSeriesList[t].enabled = newState;
+                        this.displayChartSeries(this.chartSeriesList[t]);
+                    }
+                }
+            },
+            listeners: {
+                'change': 'toggleSeries'
             }
         });
+
+        document.addEventListener('WebComponentsReady', function () {
+
+            //register series refresh listener for full config chart:
+            Polymer.dom(document).querySelector('px-chart').addEventListener("refresh-series", function (evt) {
+//                if (evt.detail === "fan-vibration-cruise") {
+//                    var ironAjaxEl = document.createElement('iron-ajax');
+//                    ironAjaxEl.url = '/demo-data/aviation/fan-vibration-cruise2.json';
+//                    ironAjaxEl.handleAs = "json";
+//                    ironAjaxEl.addEventListener('response', function (evt) {
+//                        var tsChart = Polymer.dom(document).querySelector('.full-config-example px-chart');
+//                        tsChart.updateSeries('fan-vibration-cruise', evt.detail.response.series, /*noRedraw*/false);
+//                    });
+//
+//                    ironAjaxEl.generateRequest();
+//                }
+            });
+
+        });
+
+//        function togglePointMarkers(evt) {
+//            var tsChart = Polymer.dom(this.root).querySelector('px-chart');
+//            tsChart.togglePointMarkers(/*seriesIds*/null);
+//        }
+
+
+//        function addSeries(seriesId, seriesObjUrl) {
+//            var timeSeriesComp = document.querySelector("px-chart");
+//            if (timeSeriesComp.chart.get(seriesId)) {
+//                console.log("series " + seriesId + " already exists on chart.");
+//            }
+//            else {
+//                var ironAjaxEl = document.createElement("iron-ajax");
+//                ironAjaxEl.url = seriesObjUrl;
+//                ironAjaxEl.handleAs = "json";
+//                ironAjaxEl.addEventListener("response", function (evt) {
+//                    timeSeriesComp.addSeries({
+//                                id: seriesId,
+//                                name: seriesId,
+//                                data: evt.detail.response.series
+//                            },
+//                            /*noRedraw*/false
+//                    );
+//                });
+//
+//                ironAjaxEl.generateRequest();
+//            }
+//        }
+//
+//        function removeSeries(seriesId) {
+//            var timeSeriesComp = document.querySelector("px-chart");
+//            if (timeSeriesComp.chart.get(seriesId)) {
+//                timeSeriesComp.removeSeries(seriesId);
+//            }
+//            else {
+//                console.log("series " + seriesId + " does not exist on chart.");
+//            }
+//        }
 
     </script>
 

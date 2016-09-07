@@ -62,10 +62,7 @@ router.post('/', function (req, res, next) {
         var options = {
             method: 'POST',
             uri: router.uaaServerURL,
-            //uri: 'https://d7ecf063-bf96-414f-a3b7-7ac8dcc61617.predix-uaa.run.aws-usw02-pr.ice.predix.io/oauth/token',
-            //uri: 'http://requestb.in/10tp5gu1',
             headers: {
-                //"authorization": "Basic YXBwX2NsaWVudF9pZDpzZWNyZXQ=",
                 "authorization": router.uaaBase64ClientCredential,
                 "accept": "application/json, application/x-www-form-urlencoded"
             },
@@ -94,7 +91,6 @@ router.post('/', function (req, res, next) {
         res.status(500).send('Server not initialized correctly. Contact administrator.'); // RFC 7231 Internal Server Error
     }
 });
-//}
 
 module.exports = router;
 
